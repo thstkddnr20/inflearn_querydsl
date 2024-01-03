@@ -4,7 +4,6 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,7 +123,6 @@ public class QuerydslBasicTest {
 /** 1. 나이 내림차운 desc
  *  2. 이름 올림차순 asc
  *  단  2에서 회원이름이 없으면 마지막에 출력 (nulls last)
- *
  * */
     @Test
     public void sort(){
