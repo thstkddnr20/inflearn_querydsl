@@ -231,6 +231,9 @@ public class QuerydslBasicTest {
                 .containsExactly("member1", "member2");
     }
 
+    /**
+     * 연관관계 없는 엔티티 외부조인
+     */
     @Test
     public void theta_join(){
         em.persist(new Member("teamA"));
@@ -238,7 +241,7 @@ public class QuerydslBasicTest {
         em.persist(new Member("teamC"));
 
         List<Member> result = queryFactory
-                .selectFrom(member)
+                .select(member)
                 .from(member, team) // from 절에 여러엔티티를 선택하여 세타조인 구현 -> 외부조인 불가능
                 .where(member.username.eq(team.name))
                 .fetch();
@@ -246,5 +249,45 @@ public class QuerydslBasicTest {
         assertThat(result)
                 .extracting("username")
                 .containsExactly("teamA", "teamB");
+    }
+
+    /**
+     * 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
+     */
+    @Test
+    public void join_on_filtering(){
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team) // 내부 조인을 하면 teamA의 member들만 나오고 member3,4는 누락된다.
+                .on(team.name.eq("teamA"))
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple); // teamB의 결과는 null로 나옴
+        }
+    }
+
+
+    /**
+     * 연관관계 없는 엔티티 외부조인
+     * 회원의 이름이 팀 이름과 같은 대상 외부 조인
+     */
+    @Test
+    public void join_on_no_relation(){
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        em.persist(new Member("teamC"));
+
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team) // 차이점 : 보통은 leftJoin(member.team, team)으로 가져오지만, team을 그냥 가져오고 username을 team의 이름과 비교
+                .on(member.username.eq(team.name)) // on절에 맞는 team만 leftJoin을 하겠다. 그 외는 만족하지 않으므로 team = null
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
     }
 }
