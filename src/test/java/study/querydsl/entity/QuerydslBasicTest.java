@@ -404,4 +404,29 @@ public class QuerydslBasicTest {
         }
 
     }
+
+
+    @Test
+    public void simpleProjection(){ // String 프로젝션 단일
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+                .fetch();
+    }
+
+    @Test
+    public void tupleProjection(){
+        List<Tuple> result = queryFactory // Tuple은 querydsl.core 안에 있는 것이므로 repository안에서만 사용하면 괜찮지만 그 외의 서비스, 컨트롤러 계층으로 나갈 때 dto로 변환 후 값을 꺼내는게 올바르다
+                .select(member.username, member.age)
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+            System.out.println("username = " + username);
+            System.out.println("age = " + age);
+        }
+    }
+
 }
