@@ -2,6 +2,8 @@ package study.querydsl.entity;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -12,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 
 import java.util.List;
 
@@ -426,6 +430,94 @@ public class QuerydslBasicTest {
             Integer age = tuple.get(member.age);
             System.out.println("username = " + username);
             System.out.println("age = " + age);
+        }
+    }
+
+    /**
+     * Dto로 직접 조회
+     */
+    @Test
+    public void findDtoByJPQL(){
+        List<MemberDto> result = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class) // 1번 jpql의 new operation 문법
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+    //한계 DTO의 package이름을 다 적어줘야해서 지저분, 생성자 방식만 지원
+
+    @Test
+    public void findDtoBySetter(){ // 세터로 값을 넣어줌
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class, // 반환 클래스 먼저 작성 후 필요한것들 적기
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto); // 기본 생성자 필요
+        }
+    }
+
+    @Test
+    public void findDtoByField(){ // 게터세터없이 필드에 값을 꽂아줌
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class, //bean을 fields로 변경
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByConstructor(){ // 생성자로 값을 넣는다
+        List<MemberDto> result = queryFactory
+                .select(Projections.constructor(MemberDto.class, //constructor로 변경
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findUserDtoByField(){ //필드 이름과 매칭을해서 값을 넣어주는 원리이다.
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"), // UserDto에서 name이라고 되어있기 때문에 alias를 name으로 Dto와 같게 지정해줘야 값이 들어간다 아니면 null로 모두 들어감
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    public void findUserDto(){ // 프로퍼티나 필드 접근 생성 방식에서 이름이 다를 때 해결방안이다. ExpressionUtils.as(source,alias)로 별칭 적용, username.as("")로 별칭 적용
+        QMember memberSub = new QMember("memberSub"); // 서브쿼리 사용을 위해 QMember 생성
+
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions // 서브 쿼리 부분 : 회원 나이는 max값으로만 40로만 조회하기 위함
+                                .select(memberSub.age.max())
+                                .from(memberSub), "age")))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
         }
     }
 
