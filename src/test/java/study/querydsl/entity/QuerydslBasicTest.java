@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 
 import java.util.List;
@@ -518,6 +519,18 @@ public class QuerydslBasicTest {
 
         for (UserDto userDto : result) {
             System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    public void findDtoByQueryProjection(){ // 생성자 + @QueryProjection DTO도 Q파일로 생성하여 사용
+        List<MemberDto> result = queryFactory
+                .select(new QMemberDto(member.username, member.age)) // constructor로 넣는 방식보다 좋음, 컴파일 오류로 미리 오류 제거 가능 Dto에 있는 String username, int age 자료에 맞게 딱딱들어가기 때문임
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
         }
     }
 
